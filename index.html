@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoDesk CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#F5F3EE;--surface:#FFF;--surface2:#F0EDE6;--border:#E2DDD5;--ink:#1A1714;--ink2:#6B6560;--ink3:#9E9892;--accent:#C8A96A;--accent2:#8B6F3E;--green:#4A7C59;--red:#C0392B;--blue:#2B5E8A;--radius:4px;--radius-lg:8px;--shadow:0 1px 3px rgba(26,23,20,.08),0 4px 16px rgba(26,23,20,.06);--shadow-lg:0 8px 40px rgba(26,23,20,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* ── LOGIN SCREEN ── */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--ink);position:fixed;inset:0;z-index:1000}
+.login-screen.hidden{display:none}
+.login-box{background:var(--surface);border-radius:16px;padding:48px 44px;width:100%;max-width:400px;box-shadow:var(--shadow-lg)}
+.login-logo{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-bottom:4px}
+.login-tagline{font-size:11px;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:32px}
+.login-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);margin-bottom:20px}
+.login-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.login-label{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.3px}
+.login-input{padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:var(--bg);outline:none;transition:border-color .15s}
+.login-input:focus{border-color:var(--accent);background:#fff}
+.login-btn{width:100%;padding:12px;background:var(--accent);color:var(--ink);border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;transition:all .15s}
+.login-btn:hover{background:var(--accent2);color:#fff}
+.login-err{font-size:12px;color:var(--red);margin-top:8px;min-height:18px}
+.login-switch{font-size:12px;color:var(--ink3);text-align:center;margin-top:16px;cursor:pointer}
+.login-switch span{color:var(--accent2);text-decoration:underline;cursor:pointer}
+.login-divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.login-note{font-size:11px;color:var(--ink3);text-align:center;line-height:1.6}
+
+/* ── APP SHELL ── */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--ink);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-logo h1{font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent);letter-spacing:-.3px}
+.sidebar-logo p{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.sidebar-nav{padding:20px 12px;flex:1}
+.sidebar-user{padding:16px;border-top:1px solid rgba(255,255,255,.08)}
+.sidebar-user-name{font-size:12px;color:rgba(255,255,255,.6);margin-bottom:8px;word-break:break-all}
+.sidebar-logout{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.4);cursor:pointer;padding:6px 8px;border-radius:var(--radius);transition:all .15s}
+.sidebar-logout:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.06)}
+.sidebar-logout svg{width:14px;height:14px}
+.nav-label{font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 12px;margin-bottom:6px;margin-top:20px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);color:rgba(255,255,255,.55);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9)}
+.nav-item.active{background:rgba(200,169,106,.18);color:var(--accent)}
+.nav-item svg{width:16px;height:16px;opacity:.8}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:10px;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:var(--ink)}.btn-primary:hover{background:var(--accent2);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2);color:var(--ink)}
+.btn-danger{background:#fdf0ef;color:var(--red);border:1px solid #f5c6c2}.btn-danger:hover{background:var(--red);color:#fff}
+.btn svg{width:15px;height:15px}
+.content{padding:32px;flex:1}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px}
+.stat-label{font-size:11px;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase}
+.stat-value{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-top:4px}
+.stat-sub{font-size:12px;color:var(--ink3);margin-top:2px}
+.object-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+.object-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .15s}
+.object-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.card-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+.card-address{font-weight:600;font-size:14.5px;color:var(--ink)}
+.card-city{font-size:12px;color:var(--ink3);margin-top:2px}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.status-verfuegbar{background:#e8f4ec;color:var(--green)}.status-reserviert{background:#fef3e2;color:#C07300}.status-verkauft{background:#f0eeeb;color:var(--ink3)}
+.card-body{padding:16px 20px}
+.card-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.kpi-label{font-size:10px;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase}
+.kpi-value{font-size:15px;font-weight:600;color:var(--ink);margin-top:1px}
+.card-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:11px;padding:3px 9px;background:var(--surface2);border-radius:20px;color:var(--ink2);border:1px solid var(--border)}
+.mfh-tag{font-size:11px;padding:3px 9px;background:rgba(43,94,138,.1);color:var(--blue);border-radius:20px;border:1px solid rgba(43,94,138,.2);font-weight:600;margin-top:4px;display:inline-block}
+.card-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.card-price{font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent2)}
+.card-rendite{font-size:12px;color:var(--green);font-weight:600}
+.units-strip{padding:10px 20px;background:var(--surface2);border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px}
+.unit-chip{font-size:11px;padding:3px 10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .15s}
+.unit-chip:hover{border-color:var(--accent);color:var(--accent2)}
+.unit-chip.sold{color:var(--ink3);text-decoration:line-through}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,23,20,.55);z-index:200;align-items:center;justify-content:center;padding:24px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:12px;width:100%;max-width:900px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+.modal-header{padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;position:sticky;top:0;background:var(--surface);z-index:10}
+.modal-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink)}
+.modal-subtitle{font-size:13px;color:var(--ink3);margin-top:2px}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink3);padding:4px;border-radius:var(--radius)}
+.modal-body{padding:24px 28px;flex:1}
+.modal-footer{padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.form-section{margin-bottom:24px}
+.form-section-title{font-family:'DM Serif Display',serif;font-size:15px;color:var(--ink);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.form-field{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.3px}
+.form-input,.form-select,.form-textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);background:var(--bg);transition:border-color .15s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);background:#fff}
+.form-textarea{resize:vertical;min-height:80px}
+.detail-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px}
+.detail-tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.detail-tab:hover{color:var(--ink)}.detail-tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.kz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.kz-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.kz-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px}
+.kz-val{font-size:18px;font-weight:700;color:var(--ink);margin-top:3px}
+.kalk-table{width:100%;border-collapse:collapse;font-size:13px}
+.kalk-table th{background:var(--ink);color:rgba(255,255,255,.8);padding:9px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-weight:600}
+.kalk-table th:last-child{text-align:right}
+.kalk-table td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--ink)}
+.kalk-table td:last-child{text-align:right;font-weight:600}
+.kalk-table tr:last-child td{border-bottom:none}
+.kalk-section-row td{background:var(--surface2);font-weight:700;font-size:12px;color:var(--ink2);padding:7px 14px}
+.kalk-total td{background:var(--ink);color:white;font-weight:700;font-size:14px}
+.kalk-total td:last-child{color:var(--accent)}
+.kalk-highlight td{background:#f0f7f2;color:var(--green)}
+.docs-list{display:flex;flex-direction:column;gap:10px}
+.doc-item{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+.doc-icon{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0}
+.di-img{background:#2B5E8A}.di-pdf{background:#C0392B}.di-xls{background:#4A7C59}.di-doc{background:#2B5E8A}.di-other{background:var(--accent2)}
+.doc-info{flex:1}
+.doc-name{font-weight:600;font-size:13.5px}
+.doc-meta{font-size:11px;color:var(--ink3);margin-top:3px;display:flex;gap:8px;align-items:center}
+.doc-cat{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;letter-spacing:.4px}
+.dc-bild{background:#e8f0f8;color:var(--blue)}.dc-flurkarte{background:#fef3e2;color:#C07300}
+.dc-energieausweis{background:#e8f4ec;color:var(--green)}.dc-grundriss{background:#f3e8f8;color:#7B3E9E}
+.dc-sonstiges{background:var(--surface2);color:var(--ink3);border:1px solid var(--border)}
+.doc-actions{display:flex;gap:6px}
+.icon-btn{width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2);transition:all .15s}
+.icon-btn:hover{background:var(--surface2);color:var(--ink)}.icon-btn svg{width:14px;height:14px}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:28px;text-align:center;color:var(--ink3);margin-top:10px;cursor:pointer;transition:all .15s;position:relative}
+.upload-zone:hover{border-color:var(--accent)}.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone svg{width:28px;height:28px;margin-bottom:8px;color:var(--accent)}
+.units-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
+.units-table th{background:var(--ink);color:rgba(255,255,255,.8);padding:8px 12px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-weight:600}
+.units-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.units-table tr:last-child td{border-bottom:none}.units-table tr:hover td{background:var(--surface2)}
+.unit-btn{font-size:11px;padding:3px 10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .15s;color:var(--ink2);white-space:nowrap}
+.unit-btn:hover{border-color:var(--accent);color:var(--accent2)}
+.parent-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;background:rgba(43,94,138,.1);color:var(--blue);border-radius:20px;margin-bottom:8px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+.parent-pill:hover{background:rgba(43,94,138,.2)}
+.search-input{flex:1;min-width:200px;padding:9px 14px 9px 38px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239E9892' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 12px center no-repeat;font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;color:var(--ink)}
+.search-input:focus{border-color:var(--accent)}
+.filter-select{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink2);background:var(--surface);outline:none;cursor:pointer}
+.filter-bar{display:flex;gap:10px;margin-bottom:24px;align-items:center;flex-wrap:wrap}
+.empty-state{text-align:center;padding:60px 20px;color:var(--ink3);grid-column:1/-1}
+.empty-state svg{width:48px;height:48px;margin-bottom:16px;color:var(--border)}
+.empty-state h3{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink2);margin-bottom:6px}
+.notes-area{width:100%;min-height:100px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13.5px;resize:vertical;outline:none;color:var(--ink);background:var(--bg)}
+.notes-area:focus{border-color:var(--accent)}
+/* Nutzer-Verwaltung */
+.user-row{display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);margin-bottom:8px}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);flex-shrink:0}
+.user-info{flex:1}
+.user-email{font-weight:600;font-size:13.5px}
+.user-role{font-size:11px;color:var(--ink3);margin-top:1px}
+.user-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.us-active{background:#e8f4ec;color:var(--green)}.us-pending{background:#fef3e2;color:#C07300}
+/* Supabase Setup Banner */
+.setup-banner{background:linear-gradient(135deg,#1A1714 0%,#2B2420 100%);border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:28px;border:1px solid rgba(200,169,106,.2)}
+.setup-banner h2{font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent);margin-bottom:8px}
+.setup-banner p{font-size:13px;color:rgba(255,255,255,.6);line-height:1.7;margin-bottom:16px}
+.setup-step{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start}
+.setup-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--ink);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.setup-text{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6}
+.setup-text code{background:rgba(255,255,255,.1);padding:2px 7px;border-radius:3px;font-size:12px;color:var(--accent)}
+.setup-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.setup-input{padding:10px 13px;border:1px solid rgba(200,169,106,.3);border-radius:var(--radius);background:rgba(255,255,255,.06);color:white;font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
+.setup-input:focus{border-color:var(--accent)}
+.setup-input::placeholder{color:rgba(255,255,255,.3)}
+/* Loading */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(245,243,238,.8);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.show{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--ink3)}
+@media print{body *{visibility:hidden}#expose-print,#expose-print *{visibility:visible}#expose-print{position:fixed!important;top:0;left:0;width:100%;background:white;z-index:9999}}
+.expose-preview{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px 44px;max-width:700px;margin:0 auto}
+.expose-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:2px solid var(--ink);margin-bottom:22px}
+.expose-company{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink)}
+.expose-tagline{font-size:11px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase}
+.expose-headline{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-bottom:4px}
+.expose-sub{font-size:13px;color:var(--ink3);margin-bottom:16px}
+.expose-badges{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.expose-badge{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.4px}
+.eb-gold{background:#FDF3E0;color:var(--accent2);border:1px solid var(--accent)}.eb-green{background:#e8f4ec;color:var(--green);border:1px solid #b8dfc3}.eb-blue{background:#e8f0f8;color:var(--blue);border:1px solid #b8cfe8}
+.expose-section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;margin-top:20px}
+.expose-kpis{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:4px}
+.expose-kpi{padding:12px 14px;border-right:1px solid var(--border)}.expose-kpi:last-child{border-right:none}
+.expose-kpi-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px}
+.expose-kpi-val{font-size:15px;font-weight:700;color:var(--ink);margin-top:3px}
+.expose-kalk{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:4px}
+.expose-kalk-cell{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12.5px}
+.expose-kalk-cell:nth-child(even){text-align:right;font-weight:600}
+.expose-kalk-total .expose-kalk-cell{background:var(--ink);color:white;font-weight:700;border-bottom:none}
+.expose-kalk-total .expose-kalk-cell:nth-child(even){color:var(--accent)}
+.expose-img-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.expose-img-grid img{width:100%;height:140px;object-fit:cover;border-radius:4px;border:1px solid var(--border)}
+.expose-img-main{grid-column:1/-1;height:200px!important}
+.expose-doc-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.expose-doc-thumb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);min-width:90px;flex:1;text-align:center}
+.expose-doc-thumb.missing{opacity:.4}.expose-doc-thumb svg{width:26px;height:26px;color:var(--ink3)}
+.expose-doc-thumb span{font-size:11px;color:var(--ink2);font-weight:600}
+.expose-doc-thumb img{width:100%;height:80px;object-fit:cover;border-radius:4px}
+.expose-footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--ink3);display:flex;justify-content:space-between}
+.expose-disclaimer{font-size:9px;color:var(--ink3);margin-top:12px;line-height:1.6}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Wird geladen &hellip;</div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ImmoDesk</div>
+    <div class="login-tagline">Kapitalanlagen CRM</div>
+    <div class="login-title" id="login-title">Anmelden</div>
+    <div class="login-field">
+      <label class="login-label">E-Mail</label>
+      <input class="login-input" id="login-email" type="email" placeholder="name@firma.de" autocomplete="email">
+    </div>
+    <div class="login-field" id="login-pw-field">
+      <label class="login-label">Passwort</label>
+      <input class="login-input" id="login-pw" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" onclick="doLogin()" id="login-btn">Anmelden</button>
+    <div class="login-switch" id="login-switch">Passwort vergessen? <span onclick="toggleResetMode()">Passwort zur&uuml;cksetzen</span></div>
+    <hr class="login-divider">
+    <div class="login-note">Kein Konto? Ihr Administrator l&auml;dt Sie per E-Mail ein.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="shell" id="app-shell" style="display:none">
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>ImmoDesk</h1><p>Kapitalanlagen CRM</p></div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Verwaltung</div>
+    <div class="nav-item active" onclick="showView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+    </div>
+    <div class="nav-item" onclick="showView('objekte')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Objekte
+    </div>
+    <div class="nav-label">System</div>
+    <div class="nav-item" onclick="showView('nutzer')" id="nav-nutzer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Nutzerverwaltung
+    </div>
+    <div class="nav-item" onclick="showView('einstellungen')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Einstellungen
+    </div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebar-email"></div>
+    <div class="sidebar-logout" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Abmelden
+    </div>
+  </div>
+</aside>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="view-title">Dashboard</div>
+    <button class="btn btn-ghost" onclick="openAddModal(null,'single')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Einzelobjekt
+    </button>
+    <button class="btn btn-primary" onclick="openAddModal(null,'mfh')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>MFH anlegen
+    </button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="content">
+    <div id="setup-banner-wrap"></div>
+    <div class="stats-row" id="stats-row"></div>
+    <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'DM Serif Display',serif;font-size:18px">Neueste Objekte</div>
+      <div style="font-size:12px;color:var(--ink3);cursor:pointer" onclick="showView('objekte')">Alle anzeigen &rarr;</div>
+    </div>
+    <div class="object-grid" id="dashboard-grid"></div>
+  </div>
+
+  <!-- OBJEKTE -->
+  <div id="view-objekte" class="content" style="display:none">
+    <div class="filter-bar">
+      <input class="search-input" id="search-input" type="text" placeholder="Adresse, Ort suchen &hellip;" oninput="filterObjects()">
+      <select class="filter-select" id="filter-status" onchange="filterObjects()">
+        <option value="">Alle Status</option><option>Verf&#252;gbar</option><option>Reserviert</option><option>Verkauft</option>
+      </select>
+      <select class="filter-select" id="filter-typ" onchange="filterObjects()">
+        <option value="">Alle Typen</option><option>Eigentumswohnung</option><option>Mehrfamilienhaus</option><option>Wohnanlage</option><option>Gewerbe</option>
+      </select>
+    </div>
+    <div class="object-grid" id="objekte-grid"></div>
+  </div>
+
+  <!-- NUTZER -->
+  <div id="view-nutzer" class="content" style="display:none">
+    <div style="max-width:640px">
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px">Nutzerverwaltung</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:28px">Laden Sie Kollegen und Partner per E-Mail ein. Sie erhalten einen Link zum Einloggen.</div>
+
+      <div class="form-section">
+        <div class="form-section-title">Neuen Nutzer einladen</div>
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="form-field"><label class="form-label">E-Mail-Adresse</label><input class="form-input" id="invite-email" type="email" placeholder="name@firma.de"></div>
+          <div class="form-field"><label class="form-label">Anzeigename (optional)</label><input class="form-input" id="invite-name" type="text" placeholder="Max Mustermann"></div>
+        </div>
+        <button class="btn btn-primary" onclick="inviteUser()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.61 4.9 2 2 0 0 1 3.6 2.69h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.27a16 16 0 0 0 6 6l.44-.44a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 17z"/></svg>
+          Einladung senden
+        </button>
+        <div id="invite-result" style="margin-top:10px;font-size:13px"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Aktive Nutzer</div>
+        <div id="users-list"><div style="color:var(--ink3);font-size:13px">Wird geladen&hellip;</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EINSTELLUNGEN -->
+  <div id="view-einstellungen" class="content" style="display:none">
+    <div style="max-width:560px">
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px">Einstellungen</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:28px">Supabase-Verbindung und Firmeninformationen</div>
+      <div class="form-section">
+        <div class="form-section-title">Supabase-Verbindung</div>
+        <div class="form-field" style="margin-bottom:12px"><label class="form-label">Supabase URL</label><input class="form-input" id="set-url" placeholder="https://xxxx.supabase.co"></div>
+        <div class="form-field" style="margin-bottom:16px"><label class="form-label">Supabase Anon Key</label><input class="form-input" id="set-key" placeholder="eyJhbGci..."></div>
+        <button class="btn btn-primary" onclick="saveSettings()">Verbindung speichern &amp; neu laden</button>
+        <div id="set-result" style="margin-top:10px;font-size:13px;color:var(--green)"></div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Firmeninformationen (Expos&eacute;)</div>
+        <div class="form-field" style="margin-bottom:12px"><label class="form-label">Firmenname</label><input class="form-input" id="set-firma" placeholder="Muster Immobilien GmbH"></div>
+        <div class="form-field" style="margin-bottom:16px"><label class="form-label">Untertitel / Slogan</label><input class="form-input" id="set-slogan" placeholder="Ihr Partner f&uuml;r Kapitalanlagen"></div>
+        <button class="btn btn-ghost" onclick="saveFirma()">Speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="add-modal">
+<div class="modal" style="max-width:780px">
+  <div class="modal-header">
+    <div><div class="modal-title" id="add-modal-title">Objekt anlegen</div><div class="modal-subtitle" id="add-modal-sub"></div></div>
+    <button class="modal-close" onclick="closeModal('add-modal')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-section"><div class="form-section-title">Objektdaten</div>
+      <div class="form-grid">
+        <div class="form-field"><label class="form-label">Stra&szlig;e &amp; Hausnummer *</label><input class="form-input" id="f-strasse" placeholder="z. B. Musterstra&szlig;e 12"></div>
+        <div class="form-field"><label class="form-label">PLZ &amp; Ort *</label><input class="form-input" id="f-ort" placeholder="z. B. 51234 K&ouml;ln"></div>
+        <div class="form-field"><label class="form-label">Objekttyp</label>
+          <select class="form-select" id="f-typ"><option>Eigentumswohnung</option><option>Mehrfamilienhaus</option><option>Wohnanlage</option><option>Gewerbe</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">Status</label>
+          <select class="form-select" id="f-status"><option>Verf&#252;gbar</option><option>Reserviert</option><option>Verkauft</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">Baujahr</label><input class="form-input" id="f-baujahr" type="number" placeholder="z. B. 2019"></div>
+        <div class="form-field"><label class="form-label">Energieklasse</label>
+          <select class="form-select" id="f-energie"><option>A+</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">Wohnfl&auml;che (m&sup2;)</label><input class="form-input" id="f-flaeche" type="number" placeholder="74.27"></div>
+        <div class="form-field"><label class="form-label">Stellpl&auml;tze</label><input class="form-input" id="f-stellplaetze" type="number" placeholder="0"></div>
+        <div class="form-field"><label class="form-label">Etage / Lage</label><input class="form-input" id="f-etage" placeholder="z. B. 2. OG"></div>
+        <div class="form-field"><label class="form-label">Anzahl Einheiten</label><input class="form-input" id="f-einheiten" type="number" placeholder="1"></div>
+      </div>
+    </div>
+    <div class="form-section" id="f-unit-label-section" style="display:none">
+      <div class="form-section-title">Einheitenbezeichnung</div>
+      <div class="form-field"><label class="form-label">Bezeichnung</label><input class="form-input" id="f-unit-label" placeholder="z. B. WE 1, EG links"></div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Kaufpreis &amp; Nebenkosten</div>
+      <div class="form-grid-3">
+        <div class="form-field"><label class="form-label">Kaufpreis (&euro;) *</label><input class="form-input" id="f-kaufpreis" type="number" placeholder="122600"></div>
+        <div class="form-field"><label class="form-label">Notar (%)</label><input class="form-input" id="f-notar" type="number" step="0.1" value="2"></div>
+        <div class="form-field"><label class="form-label">GrESt (%)</label><input class="form-input" id="f-grest" type="number" step="0.1" value="5.5"></div>
+        <div class="form-field"><label class="form-label">Geb&auml;udeanteil (%)</label><input class="form-input" id="f-gebaeudeanteil" type="number" value="80"></div>
+        <div class="form-field"><label class="form-label">AfA (%)</label>
+          <select class="form-select" id="f-afa"><option value="2">2 % (Altbau)</option><option value="4" selected>4 % (Neubau)</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Finanzierung</div>
+      <div class="form-grid-3">
+        <div class="form-field"><label class="form-label">Zinssatz (% p.a.)</label><input class="form-input" id="f-zinsen" type="number" step="0.1" value="4.2"></div>
+        <div class="form-field"><label class="form-label">Tilgung (% p.a.)</label><input class="form-input" id="f-tilgung" type="number" step="0.1" value="1.3"></div>
+        <div class="form-field"><label class="form-label">KNK Finanz. mtl. (&euro;)</label><input class="form-input" id="f-knk" type="number" value="76.63"></div>
+      </div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Mieteinnahmen &amp; Verwaltung</div>
+      <div class="form-grid">
+        <div class="form-field"><label class="form-label">IST-Miete mtl. (&euro;)</label><input class="form-input" id="f-miete" type="number" step="0.01" placeholder="406.44"></div>
+        <div class="form-field"><label class="form-label">Stellplatz-Miete mtl. (&euro;)</label><input class="form-input" id="f-stellplatzmiete" type="number" step="0.01" placeholder="0"></div>
+        <div class="form-field"><label class="form-label">Hausgeld mtl. (&euro;)</label><input class="form-input" id="f-hausgeld" type="number" step="0.01" placeholder="29.90"></div>
+        <div class="form-field"><label class="form-label">Subvention mtl. (&euro;)</label><input class="form-input" id="f-subvention" type="number" step="0.01" placeholder="0"></div>
+        <div class="form-field"><label class="form-label">Pers. Steuersatz (%)</label><input class="form-input" id="f-steuersatz" type="number" value="30"></div>
+      </div>
+    </div>
+    <div class="form-section"><div class="form-section-title">Beschreibung &amp; Notizen</div>
+      <div class="form-field"><label class="form-label">Beschreibungstext (Expos&eacute;)</label><textarea class="form-textarea" id="f-beschreibung" placeholder="Kurzbeschreibung&hellip;"></textarea></div>
+      <div class="form-field" style="margin-top:12px"><label class="form-label">Interne Notizen</label><textarea class="form-textarea" id="f-notizen" placeholder="Interne Anmerkungen&hellip;"></textarea></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('add-modal')">Abbrechen</button>
+    <button class="btn btn-primary" id="save-btn" onclick="saveObject()">Speichern</button>
+  </div>
+</div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+<div class="modal" style="max-width:900px">
+  <div class="modal-header">
+    <div style="flex:1">
+      <div id="d-parent-back" style="display:none;margin-bottom:6px"></div>
+      <div class="modal-title" id="d-title"></div>
+      <div class="modal-subtitle" id="d-subtitle"></div>
+    </div>
+    <button class="modal-close" onclick="closeModal('detail-modal')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-tabs">
+      <div class="detail-tab active" onclick="switchTab('uebersicht')">&Uuml;bersicht</div>
+      <div class="detail-tab" onclick="switchTab('kalkulation')" id="tab-btn-kalk">Kalkulation</div>
+      <div class="detail-tab" onclick="switchTab('dokumente')">Dokumente</div>
+      <div class="detail-tab" onclick="switchTab('expose')">Kurzexpos&eacute;</div>
+    </div>
+    <div class="tab-panel active" id="tab-uebersicht">
+      <div class="kz-grid" id="d-kz-grid"></div>
+      <div id="d-units-section" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-family:'DM Serif Display',serif;font-size:16px">Untereinheiten</div>
+          <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="addUnitToCurrentMfh()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Einheit hinzuf&uuml;gen
+          </button>
+        </div>
+        <table class="units-table"><thead><tr><th>Bezeichnung</th><th>Fl&auml;che</th><th>Miete mtl.</th><th>Kaufpreis</th><th>Rendite</th><th>Status</th><th></th></tr></thead>
+        <tbody id="d-units-tbody"></tbody></table>
+      </div>
+      <div style="font-family:'DM Serif Display',serif;font-size:15px;margin-bottom:10px">Beschreibung</div>
+      <div id="d-beschreibung" style="font-size:13.5px;color:var(--ink2);line-height:1.7;margin-bottom:20px"></div>
+      <div style="font-family:'DM Serif Display',serif;font-size:15px;margin-bottom:8px">Interne Notizen</div>
+      <textarea class="notes-area" id="d-notizen" onchange="saveNote()"></textarea>
+    </div>
+    <div class="tab-panel" id="tab-kalkulation"><div id="d-kalk-table"></div></div>
+    <div class="tab-panel" id="tab-dokumente">
+      <div style="margin-bottom:12px;font-size:13px;color:var(--ink3)">Kategorie w&auml;hlen, dann hochladen. Bilder, Flurkarte, Energieausweis und Grundriss erscheinen automatisch im Expos&eacute;.</div>
+      <div class="docs-list" id="d-docs-list"></div>
+      <div style="margin-top:14px">
+        <label class="form-label" style="display:block;margin-bottom:6px">Kategorie:</label>
+        <select class="form-select" id="doc-category" style="width:220px;margin-bottom:10px">
+          <option value="bild">Bild (Au&szlig;en / Innen)</option>
+          <option value="flurkarte">Flurkarte</option>
+          <option value="energieausweis">Energieausweis</option>
+          <option value="grundriss">Grundriss</option>
+          <option value="sonstiges">Sonstiges</option>
+        </select>
+        <div class="upload-zone">
+          <input type="file" id="doc-upload-input" multiple onchange="handleDocUpload(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p>Unterlagen hochladen</p><span>PDF, Word, Excel, Bilder</span>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-expose">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="window.print()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Drucken / PDF
+        </button>
+      </div>
+      <div id="expose-print"><div class="expose-preview" id="d-expose-content"></div></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" onclick="deleteCurrentObject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>L&ouml;schen</button>
+    <button class="btn btn-ghost" onclick="editCurrentObject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Bearbeiten</button>
+    <button class="btn btn-ghost" onclick="closeModal('detail-modal')">Schlie&szlig;en</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG — Supabase
+// ══════════════════════════════════════════
+var SUPA_URL = localStorage.getItem('immo_supa_url') || '';
+var SUPA_KEY = localStorage.getItem('immo_supa_key') || '';
+var FIRMA    = localStorage.getItem('immo_firma')    || 'ImmoDesk Kapitalanlagen';
+var SLOGAN   = localStorage.getItem('immo_slogan')   || 'Ihr Partner f\u00fcr Immobilieninvestments';
+
+var supa = null;
+var currentUser = null;
+var objects = [];
+var currentId = null;
+var editingId = null;
+var editingMode = 'single';
+var editingParentId = null;
+var resetMode = false;
+
+// ── Init Supabase ──────────────────────────
+function initSupabase(){
+  if(!SUPA_URL || !SUPA_KEY) return false;
+  try{
+    supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    return true;
+  }catch(e){ return false; }
+}
+
+// ── Loading helper ─────────────────────────
+function loading(on, txt){
+  var el = document.getElementById('loading-overlay');
+  var t  = document.getElementById('loading-text');
+  el.classList.toggle('show', on);
+  if(txt && t) t.textContent = txt;
+}
+
+// ══════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async function(){
+  // Pre-fill settings
+  document.getElementById('set-url').value  = SUPA_URL;
+  document.getElementById('set-key').value  = SUPA_KEY;
+  document.getElementById('set-firma').value   = FIRMA;
+  document.getElementById('set-slogan').value  = SLOGAN;
+
+  if(!initSupabase()){
+    // No config yet — show login-screen with setup hint, but also allow entering creds
+    showLoginScreen();
+    showSetupBanner();
+    return;
+  }
+
+  // Check session
+  loading(true, 'Sitzung wird gepr\u00fcft\u2026');
+  var s = await supa.auth.getSession();
+  loading(false);
+  if(s.data.session){
+    currentUser = s.data.session.user;
+    enterApp();
+  } else {
+    showLoginScreen();
+  }
+
+  // Listen to auth changes
+  supa.auth.onAuthStateChange(function(event, session){
+    if(event === 'SIGNED_IN' && session){
+      currentUser = session.user;
+      enterApp();
+    } else if(event === 'SIGNED_OUT'){
+      currentUser = null;
+      showLoginScreen();
+    }
+  });
+});
+
+function showLoginScreen(){
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app-shell').style.display = 'none';
+}
+
+function enterApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-shell').style.display = 'flex';
+  document.getElementById('sidebar-email').textContent = currentUser ? currentUser.email : '';
+  loadObjects();
+  renderDashboard();
+}
+
+// ══════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ══════════════════════════════════════════
+function toggleResetMode(){
+  resetMode = !resetMode;
+  document.getElementById('login-title').textContent = resetMode ? 'Passwort zur\u00fccksetzen' : 'Anmelden';
+  document.getElementById('login-pw-field').style.display = resetMode ? 'none' : '';
+  document.getElementById('login-btn').textContent = resetMode ? 'Reset-Link senden' : 'Anmelden';
+  document.getElementById('login-switch').innerHTML = resetMode
+    ? 'Zur\u00fcck zum <span onclick="toggleResetMode()">Anmelden</span>'
+    : 'Passwort vergessen? <span onclick="toggleResetMode()">Passwort zur\u00fccksetzen</span>';
+  document.getElementById('login-err').textContent = '';
+}
+
+async function doLogin(){
+  var email = document.getElementById('login-email').value.trim();
+  var pw    = document.getElementById('login-pw').value;
+  var errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+
+  if(!email){ errEl.textContent = 'Bitte E-Mail eingeben.'; return; }
+
+  if(!supa && !initSupabase()){
+    errEl.textContent = 'Supabase noch nicht konfiguriert. Bitte Einstellungen \u00f6ffnen.';
+    return;
+  }
+
+  loading(true, 'Anmeldung\u2026');
+
+  if(resetMode){
+    var r = await supa.auth.resetPasswordForEmail(email, {redirectTo: window.location.href});
+    loading(false);
+    if(r.error) errEl.textContent = r.error.message;
+    else errEl.style.color='var(--green)', errEl.textContent = 'Reset-Link gesendet! Bitte E-Mail pr\u00fcfen.';
+    return;
+  }
+
+  var r = await supa.auth.signInWithPassword({email: email, password: pw});
+  loading(false);
+  if(r.error){ errEl.textContent = r.error.message; return; }
+  // onAuthStateChange handles enterApp
+}
+
+async function doLogout(){
+  if(supa) await supa.auth.signOut();
+  showLoginScreen();
+}
+
+// ══════════════════════════════════════════
+//  SETUP BANNER (when Supabase not yet configured)
+// ══════════════════════════════════════════
+function showSetupBanner(){
+  // Show a minimal setup panel inside login box area
+  var box = document.querySelector('.login-box');
+  box.innerHTML += '<hr class="login-divider"><div style="font-size:13px;color:var(--ink2);font-weight:600;margin-bottom:12px">Supabase noch nicht verbunden</div>'
+    + '<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">Tragen Sie Ihre Supabase-Zugangsdaten ein:</div>'
+    + '<div class="login-field"><label class="login-label">Supabase URL</label><input class="login-input" id="quick-url" placeholder="https://xxxx.supabase.co"></div>'
+    + '<div class="login-field"><label class="login-label">Anon Key</label><input class="login-input" id="quick-key" placeholder="eyJhbGci..."></div>'
+    + '<button class="login-btn" onclick="quickConnect()" style="margin-top:4px">Verbinden</button>'
+    + '<div style="font-size:11px;color:var(--ink3);margin-top:12px;line-height:1.6">URL &amp; Key finden Sie in Ihrem Supabase-Projekt unter <strong>Settings &rarr; API</strong>.</div>';
+}
+
+function quickConnect(){
+  var url = (document.getElementById('quick-url')||{}).value.trim();
+  var key = (document.getElementById('quick-key')||{}).value.trim();
+  if(!url || !key){ alert('Bitte URL und Key eingeben.'); return; }
+  localStorage.setItem('immo_supa_url', url);
+  localStorage.setItem('immo_supa_key', key);
+  location.reload();
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════
+function saveSettings(){
+  var url = document.getElementById('set-url').value.trim();
+  var key = document.getElementById('set-key').value.trim();
+  if(!url||!key){ alert('Bitte beide Felder ausf\u00fcllen.'); return; }
+  localStorage.setItem('immo_supa_url', url);
+  localStorage.setItem('immo_supa_key', key);
+  document.getElementById('set-result').textContent = 'Gespeichert. Seite wird neu geladen\u2026';
+  setTimeout(function(){ location.reload(); }, 800);
+}
+function saveFirma(){
+  FIRMA  = document.getElementById('set-firma').value.trim() || FIRMA;
+  SLOGAN = document.getElementById('set-slogan').value.trim() || SLOGAN;
+  localStorage.setItem('immo_firma', FIRMA);
+  localStorage.setItem('immo_slogan', SLOGAN);
+  alert('Gespeichert.');
+}
+
+// ══════════════════════════════════════════
+//  NUTZER-EINLADUNG
+// ══════════════════════════════════════════
+async function inviteUser(){
+  var email = document.getElementById('invite-email').value.trim();
+  var name  = document.getElementById('invite-name').value.trim();
+  var res   = document.getElementById('invite-result');
+  if(!email){ res.textContent = 'Bitte E-Mail eingeben.'; res.style.color='var(--red)'; return; }
+  if(!supa){ res.textContent = 'Supabase nicht verbunden.'; res.style.color='var(--red)'; return; }
+  loading(true, 'Einladung wird gesendet\u2026');
+  var r = await supa.auth.admin.inviteUserByEmail(email, {data:{display_name: name}});
+  loading(false);
+  if(r.error){
+    res.style.color='var(--red)';
+    res.textContent = r.error.message;
+  } else {
+    res.style.color='var(--green)';
+    res.textContent = 'Einladung an ' + email + ' gesendet!';
+    document.getElementById('invite-email').value='';
+    document.getElementById('invite-name').value='';
+    loadUsers();
+  }
+}
+
+async function loadUsers(){
+  var list = document.getElementById('users-list');
+  if(!supa){ list.innerHTML='<div style="color:var(--ink3);font-size:13px">Supabase nicht verbunden.</div>'; return; }
+  var r = await supa.auth.admin.listUsers();
+  if(r.error){ list.innerHTML='<div style="color:var(--red);font-size:13px">'+r.error.message+'</div>'; return; }
+  var users = r.data.users||[];
+  if(!users.length){ list.innerHTML='<div style="color:var(--ink3);font-size:13px">Noch keine Nutzer.</div>'; return; }
+  list.innerHTML = users.map(function(u){
+    var initials = (u.email||'?').slice(0,1).toUpperCase();
+    var confirmed = u.email_confirmed_at;
+    return '<div class="user-row"><div class="user-avatar">'+initials+'</div>'
+      +'<div class="user-info"><div class="user-email">'+u.email+'</div>'
+      +'<div class="user-role">'+(u.user_metadata&&u.user_metadata.display_name?u.user_metadata.display_name:'Kein Name')+'</div></div>'
+      +'<span class="user-status '+(confirmed?'us-active':'us-pending')+'">'+(confirmed?'Aktiv':'Ausstehend')+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  DATA — Supabase CRUD
+// ══════════════════════════════════════════
+async function loadObjects(){
+  if(!supa){ objects=[]; renderDashboard(); return; }
+  loading(true,'Objekte werden geladen\u2026');
+  var r = await supa.from('objekte').select('*').order('created_at', {ascending:false});
+  loading(false);
+  if(r.error){ console.error(r.error); objects=[]; }
+  else {
+    // Re-nest units under their parents
+    var flat = r.data||[];
+    var parents = flat.filter(function(o){return !o.parent_id;});
+    parents.forEach(function(p){
+      p.units = flat.filter(function(u){return u.parent_id===p.id;});
+      p.kind  = p.kind||'single';
+    });
+    objects = parents;
+  }
+  renderDashboard();
+}
+
+async function dbSave(obj){
+  if(!supa) return {data:obj, error:null};
+  var row = objectToRow(obj);
+  if(obj._dbId){
+    var r = await supa.from('objekte').update(row).eq('id', obj._dbId).select().single();
+    return r;
+  } else {
+    var r2 = await supa.from('objekte').insert(row).select().single();
+    return r2;
+  }
+}
+
+async function dbDelete(dbId){
+  if(!supa||!dbId) return;
+  await supa.from('objekte').delete().eq('id', dbId);
+}
+
+function objectToRow(o){
+  return {
+    kind: o.kind, parent_id: o.parentId||null, unit_label: o.unitLabel||null,
+    strasse: o.strasse, ort: o.ort, typ: o.typ, status: o.status,
+    baujahr: +o.baujahr||null, energie: o.energie, einheiten: +o.einheiten||1,
+    flaeche: +o.flaeche||null, stellplaetze: +o.stellplaetze||0, etage: o.etage,
+    kaufpreis: +o.kaufpreis||0, notar: +o.notar||2, grest: +o.grest||5.5,
+    gebaeudeanteil: +o.gebaeudeanteil||80, afa: +o.afa||4,
+    zinsen: +o.zinsen||4.2, tilgung: +o.tilgung||1.3, knk: +o.knk||0,
+    miete: +o.miete||0, stellplatzmiete: +o.stellplatzmiete||0,
+    hausgeld: +o.hausgeld||0, subvention: +o.subvention||0, steuersatz: +o.steuersatz||30,
+    beschreibung: o.beschreibung, notizen: o.notizen, docs: o.docs||[]
+  };
+}
+
+function rowToObject(row){
+  var o = {
+    id: row.id, _dbId: row.id, kind: row.kind||'single',
+    parentId: row.parent_id, unitLabel: row.unit_label,
+    strasse: row.strasse, ort: row.ort, typ: row.typ, status: row.status,
+    baujahr: row.baujahr, energie: row.energie, einheiten: row.einheiten,
+    flaeche: row.flaeche, stellplaetze: row.stellplaetze, etage: row.etage,
+    kaufpreis: row.kaufpreis, notar: row.notar, grest: row.grest,
+    gebaeudeanteil: row.gebaeudeanteil, afa: row.afa,
+    zinsen: row.zinsen, tilgung: row.tilgung, knk: row.knk,
+    miete: row.miete, stellplatzmiete: row.stellplatzmiete,
+    hausgeld: row.hausgeld, subvention: row.subvention, steuersatz: row.steuersatz,
+    beschreibung: row.beschreibung, notizen: row.notizen,
+    docs: row.docs||[], units:[]
+  };
+  return o;
+}
+
+// ══════════════════════════════════════════
+//  HELPERS / CALC
+// ══════════════════════════════════════════
+function N(n,d){d=d||0;return new Intl.NumberFormat('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n||0);}
+function E(n){return N(n,2)+'\u00a0\u20ac';}
+function P(n,d){return N(n,d==null?1:d)+'\u00a0%';}
+
+function calc(o){
+  var kp=+o.kaufpreis||0,notar=kp*(+o.notar/100),grest=kp*(+o.grest/100);
+  var kaufnk=notar+grest,gesamtinvest=kp+kaufnk;
+  var gb=kp*(+o.gebaeudeanteil/100),afaB=gb*(+o.afa/100);
+  var ann=(kp*((+o.zinsen + +o.tilgung)/100))/12;
+  var zm=(kp*(+o.zinsen/100))/12,tm=(kp*(+o.tilgung/100))/12;
+  var knk=+o.knk||0,hg=+o.hausgeld||0;
+  var kostenG=ann+knk+hg;
+  var ein=(+o.miete||0)+(+o.stellplatzmiete||0)+(+o.subvention||0);
+  var ivs=kostenG-ein,jm=(+o.miete||0)*12;
+  var zve=jm-(zm*12)-afaB-hg*12;
+  var se=zve*(+o.steuersatz/100),svm=se/12,ins=ivs+svm;
+  var br=gesamtinvest>0?(jm/gesamtinvest)*100:0,ppq=+o.flaeche>0?kp/+o.flaeche:0;
+  return{kp:kp,notar:notar,grest:grest,kaufnk:kaufnk,gesamtinvest:gesamtinvest,gb:gb,afaB:afaB,ann:ann,zm:zm,tm:tm,knk:knk,hg:hg,kostenG:kostenG,ein:ein,ivs:ivs,jm:jm,zve:zve,se:se,svm:svm,ins:ins,br:br,ppq:ppq};
+}
+
+function scls(s){return{Verf\u00fcgbar:'status-verfuegbar',Reserviert:'status-reserviert',Verkauft:'status-verkauft'}[s]||'status-verfuegbar';}
+
+function findById(id){
+  for(var i=0;i<objects.length;i++){
+    if(objects[i].id===id) return objects[i];
+    var u=objects[i].units||[];
+    for(var j=0;j<u.length;j++) if(u[j].id===id) return u[j];
+  }
+  return null;
+}
+function findParent(uid){
+  for(var i=0;i<objects.length;i++){
+    var u=objects[i].units||[];
+    for(var j=0;j<u.length;j++) if(u[j].id===uid) return objects[i];
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════
+//  VIEWS
+// ══════════════════════════════════════════
+function showView(name){
+  ['dashboard','objekte','nutzer','einstellungen'].forEach(function(v){
+    document.getElementById('view-'+v).style.display=v===name?'':'none';
+  });
+  var titles={dashboard:'Dashboard',objekte:'Objekte',nutzer:'Nutzerverwaltung',einstellungen:'Einstellungen'};
+  document.getElementById('view-title').textContent=titles[name]||name;
+  document.querySelectorAll('.nav-item').forEach(function(el,i){
+    var views=['dashboard','objekte','nutzer','einstellungen'];
+    el.classList.toggle('active',views[i]===name);
+  });
+  if(name==='dashboard') renderDashboard();
+  if(name==='objekte') filterObjects();
+  if(name==='nutzer') loadUsers();
+  if(name==='einstellungen'){
+    document.getElementById('set-url').value=SUPA_URL;
+    document.getElementById('set-key').value=SUPA_KEY;
+    document.getElementById('set-firma').value=FIRMA;
+    document.getElementById('set-slogan').value=SLOGAN;
+  }
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(){
+  var all=[];
+  objects.forEach(function(o){if(o.kind==='single')all.push(o);else(o.units||[]).forEach(function(u){all.push(u);});});
+  var verf=all.filter(function(o){return o.status==='Verf\u00fcgbar';}).length;
+  var res=all.filter(function(o){return o.status==='Reserviert';}).length;
+  var vol=all.reduce(function(a,o){return a+(+o.kaufpreis||0);},0);
+  var wr=all.filter(function(o){return +o.kaufpreis>0;});
+  var avg=wr.length?wr.reduce(function(a,o){return a+calc(o).br;},0)/wr.length:0;
+  document.getElementById('stats-row').innerHTML='<div class="stat-card"><div class="stat-label">Objekte</div><div class="stat-value">'+objects.length+'</div><div class="stat-sub">'+all.length+' inkl. Einheiten</div></div><div class="stat-card"><div class="stat-label">Verf\u00fcgbar</div><div class="stat-value">'+verf+'</div><div class="stat-sub">'+res+' reserviert</div></div><div class="stat-card"><div class="stat-label">Gesamtvolumen</div><div class="stat-value">'+N(vol/1e6,2)+' M\u20ac</div><div class="stat-sub">Kaufpreissumme</div></div><div class="stat-card"><div class="stat-label">\u00d8 Bruttorendite</div><div class="stat-value">'+P(avg)+'</div><div class="stat-sub">auf Gesamtinvestition</div></div>';
+  var recent=objects.slice(0,4);
+  var g=document.getElementById('dashboard-grid');
+  g.innerHTML=recent.length?recent.map(cardHtml).join(''):emptyHtml('Noch keine Objekte','Legen Sie Ihr erstes Objekt an.');
+}
+
+function filterObjects(){
+  var q=(document.getElementById('search-input')?document.getElementById('search-input').value:'').toLowerCase();
+  var st=document.getElementById('filter-status')?document.getElementById('filter-status').value:'';
+  var ty=document.getElementById('filter-typ')?document.getElementById('filter-typ').value:'';
+  var f=objects.filter(function(o){
+    var t=(o.strasse+' '+o.ort).toLowerCase();
+    return(!q||t.indexOf(q)>=0)&&(!st||o.status===st)&&(!ty||o.typ===ty);
+  });
+  var g=document.getElementById('objekte-grid');
+  g.innerHTML=f.length?f.map(cardHtml).join(''):emptyHtml('Keine Objekte gefunden','\u00c4ndern Sie die Suchkriterien.');
+}
+
+function emptyHtml(t,s){return'<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><h3>'+t+'</h3><p>'+s+'</p></div>';}
+
+function cardHtml(o){
+  var isMfh=o.kind==='mfh';
+  var units=isMfh?(o.units||[]):[];
+  var c=isMfh?null:calc(o);
+  var totalVol=units.reduce(function(a,u){return a+(+u.kaufpreis||0);},0);
+  var chips=isMfh&&units.length?'<div class="units-strip">'+units.map(function(u){return'<span class="unit-chip'+(u.status==='Verkauft'?' sold':'')+'" onclick="event.stopPropagation();openDetail(\''+u.id+'\')">'+u.unitLabel+'</span>';}).join('')+'</div>':'';
+  return'<div class="object-card" onclick="openDetail(\''+o.id+'\')">'
+    +'<div class="card-header"><div><div class="card-address">'+o.strasse+'</div><div class="card-city">'+o.ort+'</div>'+(isMfh?'<span class="mfh-tag">MFH &middot; '+units.length+' Einheiten</span>':'')+'</div><span class="status-badge '+scls(o.status)+'">'+o.status+'</span></div>'
+    +'<div class="card-body"><div class="card-kpis"><div><div class="kpi-label">Baujahr</div><div class="kpi-value">'+(o.baujahr||'&ndash;')+'</div></div><div><div class="kpi-label">Fl\u00e4che</div><div class="kpi-value">'+N(o.flaeche)+' m\u00b2</div></div><div><div class="kpi-label">Einheiten</div><div class="kpi-value">'+(isMfh?units.length:(o.einheiten||1))+'</div></div></div>'
+    +'<div class="card-tags"><span class="tag">'+o.typ+'</span><span class="tag">Energie '+o.energie+'</span>'+(+o.stellplaetze>0?'<span class="tag">'+o.stellplaetze+' Stellplatz</span>':'')+'</div></div>'
+    +'<div class="card-footer"><div class="card-price">'+(isMfh?(totalVol>0?N(totalVol)+' \u20ac':'Volumen offen'):N(o.kaufpreis)+' \u20ac')+'</div>'+(c?'<div class="card-rendite">\u00d8 '+P(c.br)+' Rendite</div>':isMfh?'<div class="card-rendite">'+units.filter(function(u){return u.status==='Verf\u00fcgbar';}).length+' verf\u00fcgbar</div>':'')+'</div>'+chips+'</div>';
+}
+
+// ══════════════════════════════════════════
+//  DETAIL
+// ══════════════════════════════════════════
+function openDetail(id){
+  var o=findById(id); if(!o)return;
+  currentId=id;
+  var isUnit=o.kind==='unit', isMfh=o.kind==='mfh';
+  var parent=isUnit?findParent(id):null;
+  var back=document.getElementById('d-parent-back');
+  if(isUnit&&parent){back.style.display='';back.innerHTML='<button class="parent-pill" onclick="openDetail(\''+parent.id+'\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>'+parent.strasse+' (MFH)</button>';}
+  else back.style.display='none';
+  document.getElementById('d-title').textContent=isUnit?(o.unitLabel||'Einheit')+' \u2014 '+parent.strasse:o.strasse;
+  document.getElementById('d-subtitle').textContent=isUnit?(parent.ort+' \u00b7 '+o.etage+' \u00b7 '+o.status):(o.ort+' \u00b7 '+o.typ+' \u00b7 '+o.status);
+  document.getElementById('tab-btn-kalk').style.display=isMfh?'none':'';
+  if(isMfh){
+    var us=o.units||[];
+    var tVol=us.reduce(function(a,u){return a+(+u.kaufpreis||0);},0);
+    var tF=us.reduce(function(a,u){return a+(+u.flaeche||0);},0);
+    var tM=us.reduce(function(a,u){return a+(+u.miete||0);},0);
+    document.getElementById('d-kz-grid').innerHTML=[['Gesamtvolumen',N(tVol)+' \u20ac'],['Gesamtfl\u00e4che',N(tF)+' m\u00b2'],['Gesamtmiete mtl.',E(tM)],['Baujahr',o.baujahr||'\u2013'],['Energieklasse',o.energie],['WE gesamt',us.length],['Verf\u00fcgbar',us.filter(function(u){return u.status==='Verf\u00fcgbar';}).length],['Reserviert',us.filter(function(u){return u.status==='Reserviert';}).length],['Verkauft',us.filter(function(u){return u.status==='Verkauft';}).length]].map(function(r){return'<div class="kz-card"><div class="kz-label">'+r[0]+'</div><div class="kz-val">'+r[1]+'</div></div>';}).join('');
+  } else {
+    var c=calc(o);
+    document.getElementById('d-kz-grid').innerHTML=[['Kaufpreis',N(o.kaufpreis)+' \u20ac'],['Kaufpreis/m\u00b2',N(c.ppq,0)+' \u20ac'],['Gesamtinvestition',N(c.gesamtinvest)+' \u20ac'],['Wohnfl\u00e4che',N(o.flaeche)+' m\u00b2'],['Einheiten',(o.einheiten||1)+' WE'],['Baujahr',o.baujahr||'\u2013'],['Energieklasse',o.energie],['Stellpl\u00e4tze',o.stellplaetze||0],['IST-Miete mtl.',E(o.miete)],['Jahresmiete',E(c.jm)],['Bruttorendite',P(c.br)],['Invest n. Steuer',E(c.ins)+'/Mon.']].map(function(r){return'<div class="kz-card"><div class="kz-label">'+r[0]+'</div><div class="kz-val">'+r[1]+'</div></div>';}).join('');
+  }
+  var us2=document.getElementById('d-units-section');
+  if(isMfh){us2.style.display='';renderUnits(o);}else us2.style.display='none';
+  document.getElementById('d-beschreibung').textContent=o.beschreibung||'Keine Beschreibung.';
+  document.getElementById('d-notizen').value=o.notizen||'';
+  if(!isMfh)renderKalk(o,calc(o));
+  renderDocs(o);
+  renderExpose(o);
+  switchTab('uebersicht');
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function renderUnits(mfh){
+  var us=mfh.units||[];
+  var tb=document.getElementById('d-units-tbody');
+  if(!us.length){tb.innerHTML='<tr><td colspan="7" style="color:var(--ink3);text-align:center;padding:20px">Noch keine Einheiten.</td></tr>';return;}
+  tb.innerHTML=us.map(function(u){var c=calc(u);return'<tr><td><strong>'+u.unitLabel+'</strong></td><td>'+N(u.flaeche)+' m\u00b2</td><td>'+E(u.miete)+'</td><td>'+N(u.kaufpreis)+' \u20ac</td><td style="color:var(--green);font-weight:600">'+P(c.br)+'</td><td><span class="status-badge '+scls(u.status)+'" style="font-size:9px">'+u.status+'</span></td><td style="text-align:right"><span class="unit-btn" onclick="openDetail(\''+u.id+'\')">\u00d6ffnen</span> <span class="unit-btn" onclick="delUnit(\''+mfh.id+'\',\''+u.id+'\')" style="color:var(--red)">l\u00f6schen</span></td></tr>';}).join('');
+}
+
+function renderKalk(o,c){
+  document.getElementById('d-kalk-table').innerHTML='<table class="kalk-table"><thead><tr><th>Position</th><th style="text-align:right">Wert</th></tr></thead><tbody><tr class="kalk-section-row"><td colspan="2">Kaufpreis &amp; Nebenkosten</td></tr><tr><td>Kaufpreis</td><td>'+E(c.kp)+'</td></tr><tr><td>Notar ('+o.notar+' %)</td><td>'+E(c.notar)+'</td></tr><tr><td>Grunderwerbsteuer ('+o.grest+' %)</td><td>'+E(c.grest)+'</td></tr><tr><td>Kaufnebenkosten gesamt</td><td>'+E(c.kaufnk)+'</td></tr><tr class="kalk-section-row"><td colspan="2">Finanzierung (monatlich)</td></tr><tr><td>Zinsen p.M.</td><td>'+E(c.zm)+'</td></tr><tr><td>Tilgung p.M.</td><td>'+E(c.tm)+'</td></tr><tr><td>Annuit\u00e4t p.M.</td><td>'+E(c.ann)+'</td></tr><tr><td>KNK Finanzierung p.M.</td><td>'+E(c.knk)+'</td></tr><tr class="kalk-section-row"><td colspan="2">Laufende Kosten (monatlich)</td></tr><tr><td>Hausgeld</td><td>'+E(c.hg)+'</td></tr><tr><td>Kosten gesamt p.M.</td><td>'+E(c.kostenG)+'</td></tr><tr class="kalk-section-row"><td colspan="2">Einnahmen (monatlich)</td></tr><tr><td>IST-Miete</td><td>'+E(o.miete)+'</td></tr><tr><td>Stellplatz-Miete</td><td>'+E(o.stellplatzmiete)+'</td></tr><tr><td>Subvention</td><td>'+E(o.subvention)+'</td></tr><tr><td>Einnahmen gesamt p.M.</td><td>'+E(c.ein)+'</td></tr><tr class="kalk-section-row"><td colspan="2">Steuer &amp; Rendite</td></tr><tr><td>Geb\u00e4udeanteil ('+o.gebaeudeanteil+' %)</td><td>'+E(c.gb)+'</td></tr><tr><td>AfA ('+o.afa+' %)</td><td>'+E(c.afaB)+' p.a.</td></tr><tr><td>Zu versteuerndes Ergebnis</td><td>'+E(c.zve)+' p.a.</td></tr><tr><td>Steuerersparnis p.a. ('+o.steuersatz+' %)</td><td>'+E(c.se)+'</td></tr><tr><td>Steuervorteil mtl.</td><td>'+E(c.svm)+'</td></tr><tr class="kalk-section-row"><td colspan="2">Ergebnis</td></tr><tr><td>Invest vor Steuer (mtl.)</td><td>'+E(c.ivs)+'</td></tr><tr class="kalk-total"><td>Invest nach Steuer (mtl.)</td><td>'+E(c.ins)+'</td></tr><tr class="kalk-highlight"><td>Bruttorendite</td><td style="color:var(--green)">'+P(c.br)+'</td></tr></tbody></table>';
+}
+
+// ── Docs ──────────────────────────────────
+var catL={bild:'Bild',flurkarte:'Flurkarte',energieausweis:'Energieausweis',grundriss:'Grundriss',sonstiges:'Sonstiges'};
+var catC={bild:'dc-bild',flurkarte:'dc-flurkarte',energieausweis:'dc-energieausweis',grundriss:'dc-grundriss',sonstiges:'dc-sonstiges'};
+function diCls(name){var ext=(name.split('.').pop()||'').toLowerCase();if(['jpg','jpeg','png','gif','webp'].indexOf(ext)>=0)return'di-img';if(ext==='pdf')return'di-pdf';if(['xlsx','xls','csv'].indexOf(ext)>=0)return'di-xls';if(['docx','doc'].indexOf(ext)>=0)return'di-doc';return'di-other';}
+function fmtSz(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB';}
+function isImgDoc(d){return d&&['jpg','jpeg','png','gif','webp'].some(function(e){return d.name.toLowerCase().endsWith('.'+e);});}
+
+function renderDocs(o){
+  var dl=document.getElementById('d-docs-list');
+  if(!o.docs||!o.docs.length){dl.innerHTML='<div style="color:var(--ink3);font-size:13px;padding:8px 0">Noch keine Unterlagen.</div>';return;}
+  dl.innerHTML=o.docs.map(function(d,i){
+    var ext=(d.name.split('.').pop()||'???').toUpperCase().slice(0,3);
+    var cat=d.category||'sonstiges';
+    return'<div class="doc-item"><div class="doc-icon '+diCls(d.name)+'">'+ext+'</div><div class="doc-info"><div class="doc-name">'+d.name+'</div><div class="doc-meta"><span class="doc-cat '+catC[cat]+'">'+catL[cat]+'</span><span>'+d.size+' \u00b7 '+d.date+'</span></div></div><div class="doc-actions"><div class="icon-btn" onclick="dlDoc(\''+o.id+'\','+i+')" title="Herunterladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div class="icon-btn" onclick="rmDoc(\''+o.id+'\','+i+')" style="color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div></div></div>';
+  }).join('');
+}
+
+function handleDocUpload(ev){
+  var o=findById(currentId); if(!o)return;
+  if(!o.docs)o.docs=[];
+  var cat=document.getElementById('doc-category').value||'sonstiges';
+  var files=Array.from(ev.target.files);
+  var idx=0;
+  function next(){
+    if(idx>=files.length){ev.target.value='';persistDocs(o);return;}
+    var f=files[idx++];
+    var r=new FileReader();
+    r.onload=function(e){o.docs.push({name:f.name,size:fmtSz(f.size),date:new Date().toLocaleDateString('de-DE'),data:e.target.result,category:cat});renderDocs(o);renderExpose(o);next();};
+    r.readAsDataURL(f);
+  }
+  next();
+}
+
+async function persistDocs(o){
+  if(!supa||!o._dbId) return;
+  await supa.from('objekte').update({docs:o.docs}).eq('id',o._dbId);
+}
+
+function dlDoc(oid,i){var o=findById(oid);if(!o||!o.docs[i])return;var d=o.docs[i];var a=document.createElement('a');a.href=d.data;a.download=d.name;a.click();}
+function rmDoc(oid,i){var o=findById(oid);if(!o)return;o.docs.splice(i,1);renderDocs(o);renderExpose(o);persistDocs(o);}
+
+// ── Exposé ────────────────────────────────
+function renderExpose(o){
+  var isUnit=o.kind==='unit', isMfh=o.kind==='mfh';
+  var parent=isUnit?findParent(o.id):null;
+  var c=(o.kind!=='mfh')?calc(o):null;
+  var today=new Date().toLocaleDateString('de-DE');
+  var docs=o.docs||[];
+  var bilder=docs.filter(function(d){return d.category==='bild';});
+  var flurkarte=docs.find(function(d){return d.category==='flurkarte';});
+  var energie=docs.find(function(d){return d.category==='energieausweis';});
+  var grundriss=docs.find(function(d){return d.category==='grundriss';});
+  var imgDocs=bilder.filter(isImgDoc);
+  var imgBlock='';
+  if(imgDocs.length===1)imgBlock='<div style="margin-bottom:12px"><img src="'+imgDocs[0].data+'" style="width:100%;height:200px;object-fit:cover;border-radius:4px;border:1px solid var(--border)"></div>';
+  else if(imgDocs.length>1)imgBlock='<div class="expose-img-grid" style="margin-bottom:12px"><img src="'+imgDocs[0].data+'" class="expose-img-main">'+imgDocs.slice(1,4).map(function(d){return'<img src="'+d.data+'">';}).join('')+'</div>';
+  function thumb(label,d,icon){if(!d)return'<div class="expose-doc-thumb missing">'+icon+'<span>'+label+'<br><span style="font-size:9px">nicht hinterlegt</span></span></div>';if(isImgDoc(d))return'<div class="expose-doc-thumb" style="padding:0;overflow:hidden"><img src="'+d.data+'"><span style="padding:4px">'+label+'</span></div>';return'<div class="expose-doc-thumb">'+icon+'<span>'+label+'</span></div>';}
+  var mapIco='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l4-7 5 3 4-4 5 7"/><path d="M3 11v9l4-2 5 3 4-2 5 2v-9"/></svg>';
+  var boltIco='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+  var floorIco='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>';
+  var docsBlock='<div class="expose-section-title">Objektunterlagen</div><div class="expose-doc-row">'+thumb('Flurkarte',flurkarte,mapIco)+thumb('Energieausweis',energie,boltIco)+thumb('Grundriss',grundriss,floorIco)+'</div>';
+  var kalkBlock='';
+  if(c)kalkBlock='<div class="expose-section-title">Kalkulation im \u00dcberblick</div><div class="expose-kalk"><div class="expose-kalk-cell">Kaufnebenkosten gesamt</div><div class="expose-kalk-cell">'+E(c.kaufnk)+'</div><div class="expose-kalk-cell">Gesamtinvestition</div><div class="expose-kalk-cell">'+E(c.gesamtinvest)+'</div><div class="expose-kalk-cell">Annuit\u00e4t monatlich</div><div class="expose-kalk-cell">'+E(c.ann)+'</div><div class="expose-kalk-cell">Mieteinnahmen monatlich</div><div class="expose-kalk-cell">'+E(c.ein)+'</div><div class="expose-kalk-cell">Kosten vor Steuer / Monat</div><div class="expose-kalk-cell">'+E(c.ivs)+'</div><div class="expose-kalk-cell">Steuervorteil / Monat</div><div class="expose-kalk-cell">'+E(c.svm)+'</div><div class="expose-kalk-cell expose-kalk-total">Eigenaufwand nach Steuer / Monat</div><div class="expose-kalk-cell expose-kalk-total">'+E(c.ins)+'</div></div>';
+  var kpisBlock='';
+  if(c)kpisBlock='<div class="expose-section-title">Objektkennzahlen</div><div class="expose-kpis"><div class="expose-kpi"><div class="expose-kpi-label">Kaufpreis</div><div class="expose-kpi-val">'+N(o.kaufpreis)+' \u20ac</div></div><div class="expose-kpi"><div class="expose-kpi-label">Wohnfl\u00e4che</div><div class="expose-kpi-val">'+N(o.flaeche)+' m\u00b2</div></div><div class="expose-kpi"><div class="expose-kpi-label">Preis / m\u00b2</div><div class="expose-kpi-val">'+N(c.ppq,0)+' \u20ac</div></div><div class="expose-kpi"><div class="expose-kpi-label">Bruttorendite</div><div class="expose-kpi-val">'+P(c.br)+'</div></div></div>';
+  document.getElementById('d-expose-content').innerHTML='<div class="expose-header"><div><div class="expose-company">'+FIRMA+'</div><div class="expose-tagline">'+SLOGAN+'</div></div><div style="text-align:right;font-size:12px;color:var(--ink3)">Kurzexpos\u00e9<br>'+today+'</div></div>'+imgBlock+'<div class="expose-headline">'+(isUnit?o.unitLabel+' \u2014 '+parent.strasse:o.strasse)+'</div><div class="expose-sub">'+(isUnit?parent.ort:o.ort)+' \u00b7 '+(isUnit?o.etage:o.typ)+'</div><div class="expose-badges"><span class="expose-badge eb-gold">Baujahr '+(o.baujahr||'k.A.')+'</span><span class="expose-badge eb-green">Energie '+o.energie+'</span>'+(o.flaeche?'<span class="expose-badge eb-blue">'+N(o.flaeche)+' m\u00b2</span>':'')+(+o.stellplaetze>0?'<span class="expose-badge eb-blue">'+o.stellplaetze+' Stellplatz</span>':'')+'</div>'+(o.beschreibung?'<p style="font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:16px">'+o.beschreibung+'</p>':'')+kpisBlock+kalkBlock+docsBlock+'<div class="expose-disclaimer">* Alle Angaben ohne Gew\u00e4hr. Kalkulation dient der Orientierung. Stand: '+today+'.</div><div class="expose-footer"><span>'+FIRMA+'</span><span>Vertraulich</span></div>';
+}
+
+function switchTab(name){
+  var names=['uebersicht','kalkulation','dokumente','expose'];
+  document.querySelectorAll('.detail-tab').forEach(function(el,i){el.classList.toggle('active',names[i]===name);});
+  document.querySelectorAll('.tab-panel').forEach(function(el){el.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  ADD / EDIT
+// ══════════════════════════════════════════
+function openAddModal(id,mode){
+  editingId=id; editingMode=mode||'single'; editingParentId=null;
+  var o=id?findById(id):null;
+  if(o&&o.kind) editingMode=o.kind;
+  var isUnit=editingMode==='unit', isMfh=editingMode==='mfh';
+  document.getElementById('add-modal-title').textContent=id?(isMfh?'MFH bearbeiten':isUnit?'Einheit bearbeiten':'Objekt bearbeiten'):(isMfh?'MFH anlegen':isUnit?'Einheit hinzuf\u00fcgen':'Einzelobjekt anlegen');
+  document.getElementById('add-modal-sub').textContent=isMfh?'Stammdaten des Mehrfamilienhauses':isUnit?'Kalkulation f\u00fcr diese Wohneinheit':'Alle relevanten Felder ausf\u00fcllen';
+  document.getElementById('f-unit-label-section').style.display=isUnit?'':'none';
+  var fields=['strasse','ort','baujahr','einheiten','flaeche','stellplaetze','etage','kaufpreis','notar','grest','gebaeudeanteil','zinsen','tilgung','knk','miete','stellplatzmiete','hausgeld','subvention','steuersatz','beschreibung','notizen'];
+  fields.forEach(function(f){var el=document.getElementById('f-'+f);if(el)el.value=o?(o[f]!=null?o[f]:''):'';});
+  document.getElementById('f-typ').value=o?o.typ:(isMfh?'Mehrfamilienhaus':'Eigentumswohnung');
+  document.getElementById('f-status').value=o?o.status:'Verf\u00fcgbar';
+  document.getElementById('f-energie').value=o?o.energie:'B';
+  document.getElementById('f-afa').value=o?(o.afa||4):4;
+  if(isUnit)document.getElementById('f-unit-label').value=o?o.unitLabel||'':'';
+  if(!o){document.getElementById('f-notar').value='2';document.getElementById('f-grest').value='5.5';document.getElementById('f-gebaeudeanteil').value='80';document.getElementById('f-afa').value='4';document.getElementById('f-zinsen').value='4.2';document.getElementById('f-tilgung').value='1.3';document.getElementById('f-knk').value='76.63';document.getElementById('f-steuersatz').value='30';}
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function addUnitToCurrentMfh(){
+  editingParentId=currentId; editingMode='unit'; editingId=null;
+  closeModal('detail-modal');
+  openAddModal(null,'unit');
+}
+
+async function saveObject(){
+  var strasse=document.getElementById('f-strasse').value.trim();
+  var ort=document.getElementById('f-ort').value.trim();
+  var kaufpreis=parseFloat(document.getElementById('f-kaufpreis').value)||0;
+  var isUnit=editingMode==='unit', isMfh=editingMode==='mfh';
+  if(!isUnit&&!strasse){alert('Bitte Stra\u00dfe ausf\u00fcllen.');return;}
+  if(!isUnit&&!ort){alert('Bitte Ort ausf\u00fcllen.');return;}
+  if(!isMfh&&!kaufpreis){alert('Bitte Kaufpreis ausf\u00fcllen.');return;}
+
+  var fields=['strasse','ort','typ','status','baujahr','energie','einheiten','flaeche','stellplaetze','etage','kaufpreis','notar','grest','gebaeudeanteil','zinsen','tilgung','knk','miete','stellplatzmiete','hausgeld','subvention','steuersatz','beschreibung','notizen'];
+  var obj={};
+  fields.forEach(function(f){var el=document.getElementById('f-'+f);if(el)obj[f]=el.value;});
+  obj.afa=document.getElementById('f-afa').value;
+  obj.kind=editingMode;
+
+  var btn=document.getElementById('save-btn');
+  btn.disabled=true; btn.textContent='Wird gespeichert\u2026';
+
+  if(isUnit){
+    obj.unitLabel=document.getElementById('f-unit-label').value.trim()||'Einheit';
+    var parentId=editingParentId||(editingId?findParent(editingId).id:null);
+    var par=findById(parentId);
+    if(!par){alert('Elternobjekt nicht gefunden.');btn.disabled=false;btn.textContent='Speichern';return;}
+    if(!par.units)par.units=[];
+    obj.parentId=parentId;
+    if(editingId){
+      var ex=findById(editingId);
+      Object.assign(ex,obj);
+      ex.docs=ex.docs||[];
+      if(supa&&ex._dbId) await supa.from('objekte').update(objectToRow(ex)).eq('id',ex._dbId);
+    } else {
+      obj.id='local-'+Date.now(); obj.docs=[];
+      if(supa){
+        var r=await supa.from('objekte').insert(objectToRow(obj)).select().single();
+        if(!r.error){obj._dbId=r.data.id;obj.id=r.data.id;}
+      }
+      par.units.push(obj);
+    }
+    btn.disabled=false; btn.textContent='Speichern';
+    closeModal('add-modal');
+    openDetail(parentId);
+  } else {
+    if(isMfh) obj.units=obj.units||[];
+    if(editingId){
+      var ix=objects.findIndex(function(x){return x.id===editingId;});
+      if(ix>=0){var ex2=objects[ix];Object.assign(ex2,obj);ex2.docs=ex2.docs||[];ex2.units=ex2.units||[];
+        if(supa&&ex2._dbId) await supa.from('objekte').update(objectToRow(ex2)).eq('id',ex2._dbId);}
+    } else {
+      obj.id='local-'+Date.now(); obj.docs=[]; if(isMfh)obj.units=[];
+      if(supa){
+        var r2=await supa.from('objekte').insert(objectToRow(obj)).select().single();
+        if(!r2.error){obj._dbId=r2.data.id;obj.id=r2.data.id;}
+      }
+      objects.unshift(obj);
+    }
+    btn.disabled=false; btn.textContent='Speichern';
+    closeModal('add-modal');
+    renderDashboard();
+    if(document.getElementById('view-objekte').style.display!=='none')filterObjects();
+  }
+}
+
+function editCurrentObject(){
+  var o=findById(currentId); if(!o)return;
+  if(o.kind==='unit')editingParentId=o.parentId;
+  closeModal('detail-modal');
+  openAddModal(currentId,o.kind);
+}
+
+async function deleteCurrentObject(){
+  var o=findById(currentId); if(!o)return;
+  var label=o.kind==='unit'?(o.unitLabel||'Einheit'):o.strasse;
+  if(!confirm('"'+label+'" wirklich l\u00f6schen?'))return;
+  if(o.kind==='unit'){
+    var par=findParent(currentId); if(par) par.units=par.units.filter(function(u){return u.id!==currentId;});
+    if(supa&&o._dbId) await supa.from('objekte').delete().eq('id',o._dbId);
+  } else {
+    if(supa&&o._dbId){
+      // delete units too
+      (o.units||[]).forEach(async function(u){if(u._dbId) await supa.from('objekte').delete().eq('id',u._dbId);});
+      await supa.from('objekte').delete().eq('id',o._dbId);
+    }
+    objects=objects.filter(function(x){return x.id!==currentId;});
+  }
+  closeModal('detail-modal');
+  renderDashboard();
+  if(document.getElementById('view-objekte').style.display!=='none')filterObjects();
+}
+
+async function delUnit(pid,uid){
+  var par=findById(pid); var u=findById(uid); if(!par||!u)return;
+  if(!confirm('"'+(u.unitLabel||'Einheit')+'" l\u00f6schen?'))return;
+  par.units=par.units.filter(function(x){return x.id!==uid;});
+  if(supa&&u._dbId) await supa.from('objekte').delete().eq('id',u._dbId);
+  renderUnits(par);
+}
+
+async function saveNote(){
+  var o=findById(currentId); if(!o)return;
+  o.notizen=document.getElementById('d-notizen').value;
+  if(supa&&o._dbId) await supa.from('objekte').update({notizen:o.notizen}).eq('id',o._dbId);
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',function(e){if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
+
+// Keyboard: Enter in login
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter' && !document.getElementById('login-screen').classList.contains('hidden')) doLogin();
+});
+</script>
+</body>
+</html>
