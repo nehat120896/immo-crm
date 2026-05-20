@@ -996,12 +996,13 @@ async function handleDocUpload(ev){
 }
 
 async function persistDocs(o){
-  if(!supa){ console.warn('No supa'); return; }
-  if(!o._dbId){ console.warn('No _dbId for object', o.id, o.strasse); return; }
-  var meta=o.docs.map(function(d){return{name:d.name,size:d.size,date:d.date,url:d.url||null,path:d.path||null,category:d.category};});
-  var r = await supa.from('objekte').update({docs:meta}).eq('id',o._dbId);
-  if(r.error) console.error('persistDocs error:', r.error);
-  else console.log('persistDocs OK for', o.strasse, '- docs:', meta.length);
+  if(!supa) return;
+  var dbId=o._dbId||o.id;
+  if(!dbId) return;
+  var meta=o.docs.map(function(d){return{name:d.name,size:d.size||'',date:d.date||'',url:d.url||null,path:d.path||null,category:d.category||'sonstiges'};});
+  var r=await supa.from('objekte').update({docs:meta}).eq('id',dbId);
+  if(r.error){alert('Speicherfehler Dokumente: '+r.error.message);}
+  else{o._dbId=dbId;}
 }
 
 function dlDoc(oid,i){
