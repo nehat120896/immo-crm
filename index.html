@@ -975,10 +975,10 @@ async function handleDocUpload(ev){
     var uploadResult=null;
     if(supa){
       loading(true,'Datei wird hochgeladen…');
-      var r=await supa.storage.from('dokumente').upload(path,f,{upsert:true});
+      var r=await supa.storage.from('dokument').upload(path,f,{upsert:true});
       loading(false);
       if(r.error){alert('Upload-Fehler: '+r.error.message);continue;}
-      var urlR=supa.storage.from('dokumente').getPublicUrl(path);
+      var urlR=supa.storage.from('dokument').getPublicUrl(path);
       uploadResult={name:f.name,size:fmtSz(f.size),date:new Date().toLocaleDateString('de-DE'),url:urlR.data.publicUrl,path:path,category:cat};
     } else {
       // fallback: base64 for local use
@@ -1012,7 +1012,7 @@ function dlDoc(oid,i){
 async function rmDoc(oid,i){
   var o=findById(oid);if(!o)return;
   var d=o.docs[i];
-  if(d&&d.path&&supa) await supa.storage.from('dokumente').remove([d.path]);
+  if(d&&d.path&&supa) await supa.storage.from('dokument').remove([d.path]);
   o.docs.splice(i,1);
   renderDocs(o);renderExpose(o);persistDocs(o);
 }
