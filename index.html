@@ -729,14 +729,13 @@ async function loadObjects(){
   loading(false);
   if(r.error){ console.error(r.error); objects=[]; }
   else {
-    // Re-nest units under their parents
-    var flat = r.data||[];
-    var parents = flat.filter(function(o){return !o.parent_id;});
+    var flat=(r.data||[]).map(function(row){ return rowToObject(row); });
+    var parents=flat.filter(function(o){return !o.parentId;});
     parents.forEach(function(p){
-      p.units = flat.filter(function(u){return u.parent_id===p.id;});
-      p.kind  = p.kind||'single';
+      p.units=flat.filter(function(u){return u.parentId===p.id;});
+      p.kind=p.kind||'single';
     });
-    objects = parents;
+    objects=parents;
   }
   renderDashboard();
 }
@@ -997,10 +996,12 @@ async function handleDocUpload(ev){
 }
 
 async function persistDocs(o){
-  if(!supa||!o._dbId) return;
-  // Store only metadata (no base64 data) in DB
-  var meta=o.docs.map(function(d){return{name:d.name,size:d.size,date:d.date,url:d.url||null,path:d.path||null,category:d.category,data:d.data||null};});
-  await supa.from('objekte').update({docs:meta}).eq('id',o._dbId);
+  if(!supa){ console.warn('No supa'); return; }
+  if(!o._dbId){ console.warn('No _dbId for object', o.id, o.strasse); return; }
+  var meta=o.docs.map(function(d){return{name:d.name,size:d.size,date:d.date,url:d.url||null,path:d.path||null,category:d.category};});
+  var r = await supa.from('objekte').update({docs:meta}).eq('id',o._dbId);
+  if(r.error) console.error('persistDocs error:', r.error);
+  else console.log('persistDocs OK for', o.strasse, '- docs:', meta.length);
 }
 
 function dlDoc(oid,i){
